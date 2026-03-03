@@ -1,7 +1,4 @@
-
-import { MOD_NAME, MODS } from "../../core/config";
-
-const MOD_PREFIX = `[${MOD_NAME}:${MODS.MINI_PLAYER}]`;
+import { MINI_PLAYER_PREFIX } from "./miniPlayer_config";
 
 const PLAYER_SELECTOR = '[data-testid="pip-hover-element"]'; // Paywall is immediate sibling before this element
 
@@ -10,12 +7,12 @@ export function removePaywall(pipWindow: Window) {
 
         const player: HTMLElement | null = pipWindow.document.querySelector(PLAYER_SELECTOR);
         if (player) {
-            console.log(`${MOD_PREFIX} Found player element`, player);
+            console.log(`${MINI_PLAYER_PREFIX} Found player element`, player);
 
             const paywall = player.previousSibling;
             if (paywall) {
                 paywall.remove();
-                console.log(`${MOD_PREFIX} Paywall removed. Resizing PiP window is now possible!`);
+                console.log(`${MINI_PLAYER_PREFIX} Paywall removed. Resizing PiP window is now possible!`);
 
                 observer.disconnect(); // stop watching once removed
             }
