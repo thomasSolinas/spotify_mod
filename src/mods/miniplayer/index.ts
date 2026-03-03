@@ -1,9 +1,8 @@
 import { removePaywall } from './paywallRemover';
 
 export function initMiniPlayer() {
-    window.documentPictureInPicture.addEventListener('enter', (event: Event) => {
-        const pipWindow = (event as DocumentPictureInPictureEvent).window;
+    window.documentPictureInPicture.addEventListener('enter', (event: DocumentPictureInPictureEvent) => {
+        const pipWindow = (event).window;
         console.log('PiP opened!', pipWindow);
-        removePaywall(pipWindow);
     });
 }
