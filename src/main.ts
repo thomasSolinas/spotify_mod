@@ -1,1 +1,3 @@
-console.log("Hello via Bun!");
+import { initMiniPlayer } from './mods/miniplayer';
+
+initMiniPlayer();
