@@ -1,12 +1,15 @@
-// Catch the opening of the PiP 
-window.documentPictureInPicture.addEventListener('enter', (event) => {
-    const pipWindow = event.window;
-    console.log('PiP opened!! \n', pipWindow); 
-});
+export function removePaywall(pipWindow: Window) {
+    const observer = new MutationObserver((mutations: MutationRecord[]) => {
+        for (const mutation of mutations) {
+            for (const node of mutation.addedNodes) {
+                console.log('node added to PiP:', node);
+                // paywall removal logic will go here once we identify the element
+            }
+        }
+    });
 
-const pipOpenFunction =  (event) => {
-    const pipWindow = event.window;
-    console.log('PiP opened!! \n', pipWindow); 
+    observer.observe(pipWindow.document.body, {
+        childList: true,
+        subtree: true
+    });
 }
-
-window.documentPictureInPicture.removeEventListener('enter', pipOpenFunction);
