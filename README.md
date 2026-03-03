@@ -22,8 +22,9 @@ Spotify Web Player modifications.
 // @match        https://open.spotify.com/*
 // @grant        none
 // @run-at       document-idle
-// @downloadURL  https://raw.githubusercontent.com/YOUR_USERNAME/spotify_mod/main/dist/bundle.js
-// @updateURL    https://raw.githubusercontent.com/YOUR_USERNAME/spotify_mod/main/dist/bundle.js
+// @require      https://raw.githubusercontent.com/thomasSolinas/spotify_mod/main/dist/bundle.js
+// @downloadURL  https://raw.githubusercontent.com/thomasSolinas/spotify_mod/main/dist/bundle.js
+// @updateURL    https://raw.githubusercontent.com/thomasSolinas/spotify_mod/main/dist/bundle.js
 // ==/UserScript==
 ```
 
