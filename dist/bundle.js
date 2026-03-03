@@ -1,3 +1,12 @@
+// src/core/inject.ts
+function inject(initFunction) {
+  window.webpackChunkclient_web.push([
+    ["spotify_mod"],
+    {},
+    initFunction
+  ]);
+}
+
 // src/core/config.ts
 var MOD_NAME = "spotify-mod";
 var MOD_VERSION = "0.1.0";
@@ -31,7 +40,7 @@ function removePaywall(pipWindow) {
 }
 
 // src/mods/miniplayer/index.ts
-function initMiniPlayer() {
+function initMiniPlayerMod() {
   window.documentPictureInPicture.addEventListener("enter", (event) => {
     const pipWindow = event.window;
     console.log(`${MINI_PLAYER_PREFIX} PiP opened!`, pipWindow);
@@ -40,5 +49,7 @@ function initMiniPlayer() {
 }
 
 // src/main.ts
-console.log(`%c${MOD_NAME} v${MOD_VERSION} loaded!`, "color: green; font-weight: bold;");
-initMiniPlayer();
+inject(() => {
+  console.log(`%c${MOD_NAME} v${MOD_VERSION} loaded!`, "color: green; font-weight: bold;");
+  initMiniPlayerMod();
+});
