@@ -1,0 +1,14 @@
+{
+    "manifest_version": 3,
+    "name": "Spotify Mod",
+    "version": "0.1.1",
+    "description": "Spotify Web Player modifications",
+    "content_scripts": [
+        {
+            "matches": ["https://open.spotify.com/*"],
+            "js": ["content.js"],
+            "run_at": "document_idle",
+            "world": "MAIN"
+        }
+    ]
+}
