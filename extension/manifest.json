@@ -1,14 +1,21 @@
 {
-    "manifest_version": 3,
-    "name": "Spotify Mod",
-    "version": "0.1.1",
-    "description": "Spotify Web Player modifications",
-    "content_scripts": [
-        {
-            "matches": ["https://open.spotify.com/*"],
-            "js": ["content.js"],
-            "run_at": "document_idle",
-            "world": "MAIN"
-        }
-    ]
+  "manifest_version": 3,
+  "name": "spotify-mod",
+  "version": "0.1.0",
+  "description": "Spotify mini player paywall remover",
+  "content_scripts": [
+    {
+      "matches": [
+        "https://open.spotify.com/*"
+      ],
+      "js": [
+        "content.js"
+      ],
+      "run_at": "document_idle"
+    }
+  ],
+  "host_permissions": [
+    "https://open.spotify.com/*",
+    "https://raw.githubusercontent.com/*"
+  ]
 }

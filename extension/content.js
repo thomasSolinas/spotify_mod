@@ -1,55 +1,55 @@
-// src/core/inject.ts
-function inject(initFunction) {
-  window.webpackChunkclient_web.push([
-    ["spotify_mod"],
-    {},
-    initFunction
-  ]);
-}
+// spotify-mod - content.js (loader)
+// Checks latest GitHub Release tag, fetches logic.js from that tag if changed.
+// This file never needs to be updated after initial install.
 
-// src/core/config.ts
-var MOD_NAME = "spotify-mod";
-var MOD_VERSION = "0.1.0";
-var MODS = {
-  MINI_PLAYER: "miniplayer",
-  ADS: "ads"
-};
+const GITHUB_USER   = "thomasSolinas";
+const GITHUB_REPO   = "spotify_mod";
+const RELEASES_API  = `https://api.github.com/repos/${GITHUB_USER}/${GITHUB_REPO}/releases/latest`;
 
-// src/mods/miniplayer/miniPlayer_config.ts
-var MINI_PLAYER_PREFIX = `[${MOD_NAME}:${MODS.MINI_PLAYER}]`;
+(async () => {
+  try {
+    // 1. Get the latest release tag (e.g. "v0.2.0")
+    const res = await fetch(RELEASES_API);
+    const { tag_name: latestTag } = await res.json();
 
-// src/mods/miniplayer/paywallRemover.ts
-var PLAYER_SELECTOR = '[data-testid="pip-hover-element"]';
-function removePaywall(pipWindow) {
-  const observer = new MutationObserver((mutations) => {
-    const player = pipWindow.document.querySelector(PLAYER_SELECTOR);
-    if (player) {
-      console.log(`${MINI_PLAYER_PREFIX} Found player element`, player);
-      const paywall = player.previousSibling;
-      if (paywall) {
-        paywall.remove();
-        console.log(`${MINI_PLAYER_PREFIX} Paywall removed. Resizing PiP window is now possible!`);
-        observer.disconnect();
-      }
+    const cachedTag   = localStorage.getItem("spotify_mod_tag");
+    const cachedLogic = localStorage.getItem("spotify_mod_logic");
+
+    let logicCode;
+
+    if (latestTag !== cachedTag || !cachedLogic) {
+      // 2. Fetch logic.js directly from the tagged commit in the repo
+      const logicUrl = `https://raw.githubusercontent.com/${GITHUB_USER}/${GITHUB_REPO}/refs/tags/${latestTag}/extension/logic.js`;
+      console.log(`[spotify-mod] Updating ${cachedTag ?? "none"} → ${latestTag}`);
+
+      const logicRes = await fetch(logicUrl);
+      if (!logicRes.ok) throw new Error(`Failed to fetch logic.js: ${logicRes.status}`);
+      logicCode = await logicRes.text();
+
+      localStorage.setItem("spotify_mod_logic", logicCode);
+      localStorage.setItem("spotify_mod_tag",   latestTag);
+    } else {
+      console.log(`[spotify-mod] Up to date (${latestTag})`);
+      logicCode = cachedLogic;
     }
-  });
-  observer.observe(pipWindow.document.body, {
-    childList: true,
-    subtree: true
-  });
-}
 
-// src/mods/miniplayer/index.ts
-function initMiniPlayerMod() {
-  window.documentPictureInPicture.addEventListener("enter", (event) => {
-    const pipWindow = event.window;
-    console.log(`${MINI_PLAYER_PREFIX} PiP opened!`, pipWindow);
-    removePaywall(pipWindow);
-  });
-}
+    // 3. Inject into page context
+    const script = document.createElement("script");
+    script.textContent = logicCode;
+    (document.head || document.documentElement).appendChild(script);
+    script.remove();
 
-// src/main.ts
-inject(() => {
-  console.log(`%c${MOD_NAME} v${MOD_VERSION} loaded!`, "color: green; font-weight: bold;");
-  initMiniPlayerMod();
-});
+  } catch (err) {
+    console.error("[spotify-mod] Load failed:", err);
+
+    // Fallback: use cached logic if network is unavailable
+    const cached = localStorage.getItem("spotify_mod_logic");
+    if (cached) {
+      console.warn("[spotify-mod] Using cached logic as fallback");
+      const script = document.createElement("script");
+      script.textContent = cached;
+      (document.head || document.documentElement).appendChild(script);
+      script.remove();
+    }
+  }
+})();
