@@ -100,6 +100,12 @@ def download_release(tag=None, logic_url=None):
             err(f"Failed to download {filename}: {e}")
             sys.exit(1)
 
+    # Write version.json so content.js knows what's installed on disk
+    version_path = INSTALL_DIR / "version.json"
+    with open(version_path, "w") as f:
+        json.dump({"version": tag}, f)
+    ok(f"version.json written ({tag})")
+
     # Cache the installed tag
     TAG_CACHE.write_text(tag)
     ok(f"Release {tag} installed at {INSTALL_DIR}")

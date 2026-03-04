@@ -1,55 +1,88 @@
 // spotify-mod - content.js (loader)
-// Checks latest GitHub Release tag, fetches logic.js from that tag if changed.
-// This file never needs to be updated after initial install.
+// Injects logic.js via chrome.runtime.getURL (CSP-safe).
+// Compares installed version (version.json in extension folder) against
+// latest GitHub release tag to show an update banner when needed.
 
-const GITHUB_USER   = "thomasSolinas";
-const GITHUB_REPO   = "spotify_mod";
-const RELEASES_API  = `https://api.github.com/repos/${GITHUB_USER}/${GITHUB_REPO}/releases/latest`;
+const GITHUB_USER  = "thomasSolinas";
+const GITHUB_REPO  = "spotify_mod";
+const RELEASES_API = `https://api.github.com/repos/${GITHUB_USER}/${GITHUB_REPO}/releases/latest`;
 
+// ── Inject local logic.js (CSP-safe) ────────────────────────────────────────
+function injectScript() {
+  const script = document.createElement("script");
+  script.src = chrome.runtime.getURL("logic.js");
+  script.onload = () => script.remove();
+  (document.head || document.documentElement).appendChild(script);
+}
+
+// ── Update banner ────────────────────────────────────────────────────────────
+function showUpdateBanner(latestTag) {
+  const snoozed = localStorage.getItem("spotify_mod_snooze");
+  if (snoozed === latestTag) return; // user snoozed this specific tag
+
+  const banner = document.createElement("div");
+  banner.innerHTML = `
+    <span>🎵 <strong>spotify-mod ${latestTag}</strong> is available — re-run <code>install.py</code> to update</span>
+    <button id="smod-snooze" style="margin-left:12px;background:rgba(255,255,255,0.2);border:1px solid #fff;color:#fff;border-radius:4px;padding:3px 10px;cursor:pointer;font-size:12px;">Skip until next release</button>
+    <button id="smod-close" style="margin-left:8px;background:none;border:1px solid #fff;color:#fff;border-radius:4px;padding:3px 10px;cursor:pointer;">✕</button>
+  `;
+  Object.assign(banner.style, {
+    position:     "fixed",
+    bottom:       "80px",
+    left:         "50%",
+    transform:    "translateX(-50%)",
+    background:   "#1db954",
+    color:        "#fff",
+    padding:      "12px 20px",
+    borderRadius: "8px",
+    fontFamily:   "sans-serif",
+    fontSize:     "14px",
+    zIndex:       "99999",
+    boxShadow:    "0 4px 12px rgba(0,0,0,0.4)",
+    display:      "flex",
+    alignItems:   "center",
+    gap:          "8px",
+    whiteSpace:   "nowrap",
+  });
+  document.body.appendChild(banner);
+
+  // ✕ — dismiss for this session, reappears on next Spotify load
+  document.getElementById("smod-close").onclick = () => banner.remove();
+
+  // Snooze — won't appear again until a newer tag is released
+  document.getElementById("smod-snooze").onclick = () => {
+    localStorage.setItem("spotify_mod_snooze", latestTag);
+    banner.remove();
+  };
+}
+
+// ── Main ─────────────────────────────────────────────────────────────────────
 (async () => {
+  // Always inject first so the mod runs regardless of network
+  injectScript();
+
   try {
-    // 1. Get the latest release tag (e.g. "v0.2.0")
-    const res = await fetch(RELEASES_API);
-    const { tag_name: latestTag } = await res.json();
+    // Read the version install.py wrote into the extension folder
+    const localRes  = await fetch(chrome.runtime.getURL("version.json"));
+    const { version: installedVersion } = await localRes.json();
 
-    const cachedTag   = localStorage.getItem("spotify_mod_tag");
-    const cachedLogic = localStorage.getItem("spotify_mod_logic");
+    // Ask GitHub for the latest release tag
+    const remoteRes = await fetch(RELEASES_API);
+    const { tag_name: latestTag } = await remoteRes.json();
 
-    let logicCode;
+    // Normalize: strip leading "v" for comparison (v0.2.1 === 0.2.1)
+    const normalize = (v) => v.replace(/^v/, "");
 
-    if (latestTag !== cachedTag || !cachedLogic) {
-      // 2. Fetch logic.js directly from the tagged commit in the repo
-      const logicUrl = `https://raw.githubusercontent.com/${GITHUB_USER}/${GITHUB_REPO}/refs/tags/${latestTag}/extension/logic.js`;
-      console.log(`[spotify-mod] Updating ${cachedTag ?? "none"} → ${latestTag}`);
-
-      const logicRes = await fetch(logicUrl);
-      if (!logicRes.ok) throw new Error(`Failed to fetch logic.js: ${logicRes.status}`);
-      logicCode = await logicRes.text();
-
-      localStorage.setItem("spotify_mod_logic", logicCode);
-      localStorage.setItem("spotify_mod_tag",   latestTag);
+    if (normalize(latestTag) !== normalize(installedVersion)) {
+      console.log(`[spotify-mod] Update available: ${installedVersion} → ${latestTag}`);
+      showUpdateBanner(latestTag);
     } else {
-      console.log(`[spotify-mod] Up to date (${latestTag})`);
-      logicCode = cachedLogic;
+      console.log(`[spotify-mod] Up to date (${installedVersion})`);
+      // Clear any leftover snooze from a previous version
+      localStorage.removeItem("spotify_mod_snooze");
     }
-
-    // 3. Inject into page context
-    const script = document.createElement("script");
-    script.textContent = logicCode;
-    (document.head || document.documentElement).appendChild(script);
-    script.remove();
 
   } catch (err) {
-    console.error("[spotify-mod] Load failed:", err);
-
-    // Fallback: use cached logic if network is unavailable
-    const cached = localStorage.getItem("spotify_mod_logic");
-    if (cached) {
-      console.warn("[spotify-mod] Using cached logic as fallback");
-      const script = document.createElement("script");
-      script.textContent = cached;
-      (document.head || document.documentElement).appendChild(script);
-      script.remove();
-    }
+    console.error("[spotify-mod] Update check failed:", err);
   }
 })();

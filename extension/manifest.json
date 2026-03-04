@@ -5,13 +5,15 @@
   "description": "Spotify mini player paywall remover",
   "content_scripts": [
     {
-      "matches": [
-        "https://open.spotify.com/*"
-      ],
-      "js": [
-        "content.js"
-      ],
+      "matches": ["https://open.spotify.com/*"],
+      "js": ["content.js"],
       "run_at": "document_idle"
+    }
+  ],
+  "web_accessible_resources": [
+    {
+      "resources": ["logic.js", "version.json"],
+      "matches": ["https://open.spotify.com/*"]
     }
   ],
   "host_permissions": [
