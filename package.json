@@ -8,8 +8,5 @@
   },
   "peerDependencies": {
     "typescript": "^5"
-  },
-  "scripts": {
-    "build": "bun build src/main.ts --outfile dist/bundle.js && cp dist/bundle.js extension/content.js"
   }
 }
