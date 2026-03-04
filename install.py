@@ -45,25 +45,12 @@ def ask(prompt, default="y"):
 
 # ── GITHUB RELEASE ────────────────────────────────────────────────────────────
 def fetch_latest_release():
-    """Returns (tag, download_url_for_logic_js, manifest_raw_url)"""
+    """Returns the latest release tag string e.g. 'v0.2.0'"""
     try:
         req = urllib.request.Request(RELEASES_API, headers={"Accept": "application/vnd.github+json"})
         with urllib.request.urlopen(req) as r:
             data = json.loads(r.read())
-
-        tag = data["tag_name"]  # e.g. "v0.2.0"
-
-        # logic.js must be uploaded as a release asset
-        logic_url = next(
-            (a["browser_download_url"] for a in data.get("assets", []) if a["name"] == "logic.js"),
-            None
-        )
-        if not logic_url:
-            err(f"Release {tag} has no logic.js asset. Did you attach it to the release?")
-            sys.exit(1)
-
-        return tag, logic_url
-
+        return data["tag_name"], None
     except Exception as e:
         err(f"Could not fetch release info: {e}")
         sys.exit(1)
@@ -93,15 +80,17 @@ def download_release(tag=None, logic_url=None):
     header("Downloading extension files")
 
     if tag is None:
-        tag, logic_url = fetch_latest_release()
+        tag, _ = fetch_latest_release()
 
-    # manifest.json and content.js come from main branch (they're static)
-    static_files = {
+    RAW_TAG = f"https://raw.githubusercontent.com/{GITHUB_USER}/{GITHUB_REPO}/refs/tags/{tag}"
+
+    files = {
         "manifest.json": f"{RAW_MAIN}/extension/manifest.json",
         "content.js":    f"{RAW_MAIN}/extension/content.js",
+        "logic.js":      f"{RAW_TAG}/extension/logic.js",
     }
 
-    for filename, url in static_files.items():
+    for filename, url in files.items():
         dest = INSTALL_DIR / filename
         p(f"  → {url}", CYAN)
         try:
@@ -110,15 +99,6 @@ def download_release(tag=None, logic_url=None):
         except Exception as e:
             err(f"Failed to download {filename}: {e}")
             sys.exit(1)
-
-    # logic.js comes from the release asset
-    p(f"  → {logic_url}", CYAN)
-    try:
-        urllib.request.urlretrieve(logic_url, INSTALL_DIR / "logic.js")
-        ok(f"logic.js saved ({tag})")
-    except Exception as e:
-        err(f"Failed to download logic.js: {e}")
-        sys.exit(1)
 
     # Cache the installed tag
     TAG_CACHE.write_text(tag)
