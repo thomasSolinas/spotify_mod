@@ -1,10 +1,17 @@
 // src/core/inject.ts
 function inject(initFunction) {
-  window.webpackChunkclient_web.push([
-    ["spotify_mod"],
-    {},
-    initFunction
-  ]);
+  function tryInject() {
+    if (window.webpackChunkclient_web) {
+      window.webpackChunkclient_web.push([
+        ["spotify_mod"],
+        {},
+        initFunction
+      ]);
+    } else {
+      setTimeout(tryInject, 100);
+    }
+  }
+  tryInject();
 }
 
 // src/core/config.ts
