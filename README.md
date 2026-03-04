@@ -1,7 +1,24 @@
 # spotify-mod
 
 Removes the mini player (PiP) paywall on Spotify free accounts.
-Auto-updates silently on every Spotify load — no reinstall ever needed.
+Auto-updates on every Spotify load — no reinstall ever needed.
+
+---
+
+## Install
+
+Requires Python 3 — preinstalled on macOS/Linux, [download here](https://python.org) on Windows.
+
+**1. Download [install.py](install.py)**
+
+**2. Run it:**
+```bash
+python install.py
+```
+
+The script downloads the extension from GitHub, detects your browsers, and walks you through the 2 required browser clicks. That's it — never touch it again.
+
+> **Firefox note:** temporary extensions are removed on browser restart. Re-run `install.py` after each restart.
 
 ---
 
@@ -16,36 +33,10 @@ The extension is split into two layers:
 | `extension/logic.js` | Actual mod logic — built from `src/` | Every release |
 
 On every Spotify page load, `content.js`:
-1. Hits the GitHub Releases API to get the latest tag
-2. Compares it to the cached tag in `localStorage`
-3. If different → fetches `logic.js` from that tag via `raw.githubusercontent.com`
-4. Injects it into the page and caches it
-5. If GitHub is unreachable → falls back to the cached version
-
-This means **pushing a new release is the only thing needed to update all users**.
-
----
-
-## Install (users)
-
-Requires Python 3 — preinstalled on macOS/Linux, [download here](https://python.org) on Windows.
-
-```bash
-python install.py
-```
-
-The script will:
-- Download the latest release files from GitHub
-- Detect installed browsers (Chrome, Edge, Vivaldi, Firefox)
-- Open the browser extensions page and walk you through the 2 required clicks
-
-### Manual load (if you prefer)
-
-1. Download this repo or clone it
-2. **Chrome / Edge / Vivaldi** → go to `chrome://extensions` → enable **Developer mode** → **Load unpacked** → select the `extension/` folder
-3. **Firefox** → go to `about:debugging#/runtime/this-firefox` → **Load Temporary Add-on** → select `extension/manifest.json`
-
-> **Firefox note:** temporary extensions are removed on browser restart. Re-run `install.py` after each restart.
+1. Reads the installed version from `version.json` in the extension folder
+2. Hits the GitHub Releases API to get the latest tag
+3. If behind → shows a banner prompting to re-run `install.py`
+4. Injects the local `logic.js` via `chrome.runtime.getURL` (CSP-safe)
 
 ---
 
@@ -91,7 +82,7 @@ main        → always stable, what users run
 feature/*   → work in progress
 ```
 
-Work on `main` or a feature branch freely — users are pinned to the **latest release tag**, not to `main`. A push to `main` without a new tag changes nothing for users.
+Users are pinned to the latest release tag, not to `main`. A push to `main` without a new tag changes nothing for users.
 
 ---
 
@@ -105,15 +96,13 @@ bun run build
 git add .
 git commit -m "feat: description of what changed"
 
-# 3. tag
+# 3. tag and push
 git tag v0.x.0
 git push origin main
 git push origin v0.x.0
 ```
 
 Then on GitHub: **Releases → Draft a new release → pick the tag → Publish**.
-
-No assets need to be attached. The tag points to the commit, `content.js` fetches `logic.js` directly from `raw.githubusercontent.com/refs/tags/vX.X.X`.
 
 ### Verify the release is live
 
@@ -127,8 +116,6 @@ No assets need to be attached. The tag points to the commit, `content.js` fetche
 curl https://api.github.com/repos/thomasSolinas/spotify_mod/releases/latest | grep tag_name
 ```
 
-Should return the tag you just pushed.
-
 ---
 
 ## Versioning
@@ -139,7 +126,7 @@ Follows [semantic versioning](https://semver.org):
 - `0.x.0` — new feature or structural change
 - `1.0.0` — first fully stable public release
 
-Current version: **v0.2.0**
+Current version: **v0.2.4**
 
 ---
 
