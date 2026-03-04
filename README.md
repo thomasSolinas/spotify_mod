@@ -3,6 +3,7 @@ Spotify Web Player modifications.
 
 ## Features
 - Mini player paywall removal (resize freely without Premium)
+- Automatic add skipping (work ing progress...)
 
 ## Installation
 
