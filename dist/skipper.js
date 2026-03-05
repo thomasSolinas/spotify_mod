@@ -19,11 +19,12 @@ function waitForMusicReady(onReady) {
 // src/mods/adskipper/adPlayingListener.ts
 var AD_PLAYING_SELECTOR = '[data-testid="ad-link"]';
 function initAdPlayingListener(nowPlayingWidget) {
-  console.log("mutation fired");
-  const observer = new MutationObserver(() => {
+  const observer = new MutationObserver(async () => {
+    console.log("mutation fired");
     const adPlayer = document.querySelector(AD_PLAYING_SELECTOR);
     if (adPlayer) {
-      console.log("Ad detected, skipping...");
+      console.log("Ad detected, waiting for duration to load before skipping...");
+      await waitForValidDuration();
       const audio = window._spotifyAudio;
       audio.currentTime = audio.duration - 0.5;
     }
@@ -31,6 +32,18 @@ function initAdPlayingListener(nowPlayingWidget) {
   observer.observe(nowPlayingWidget, {
     childList: true,
     subtree: true
+  });
+}
+function waitForValidDuration() {
+  return new Promise((resolve) => {
+    const interval = setInterval(() => {
+      const audio = window._spotifyAudio;
+      if (!isNaN(audio.duration) && audio.duration > 0) {
+        clearInterval(interval);
+        resolve();
+        console.log("Ad duration loaded, skipping ad now");
+      }
+    }, 100);
   });
 }
 
@@ -54,6 +67,4 @@ function captureAudioElement() {
 
 // src/mods/adskipper/index.ts
 captureAudioElement();
-waitForMusicReady((nowPlayingWidget) => {
-  initAdPlayingListener(nowPlayingWidget);
-});
+waitForMusicReady(initAdPlayingListener);

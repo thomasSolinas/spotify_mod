@@ -5,6 +5,7 @@ import { captureAudioElement } from './audioElementCapture';
 
 
 captureAudioElement();
-waitForMusicReady((nowPlayingWidget) => {
-  initAdPlayingListener(nowPlayingWidget);
-});
+// wait for the music player to be ready.
+// then calls initAdPlayingLinstener with the now-playing widget as a parameter
+
+waitForMusicReady(initAdPlayingListener);

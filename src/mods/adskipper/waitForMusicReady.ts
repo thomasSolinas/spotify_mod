@@ -16,6 +16,7 @@ export function waitForMusicReady(onReady: (nowPlayingWidget: HTMLElement) => vo
         if (nowPlayingWidget !== null) {
             observer.disconnect();
             
+            // Call the callback with the now-playing widget as parameter
             onReady(nowPlayingWidget);
         }
     });
