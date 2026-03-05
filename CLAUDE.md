@@ -2,7 +2,7 @@
 
 ## Overview
 A Chrome extension (Manifest V3) that modifies Spotify Web Player (`open.spotify.com`).
-Currently ships two mods: mini player paywall removal (done) and audio ad skipper (in progress).
+Currently ships two mods: mini player paywall removal and audio ad skipper (both done).
 Auto-updates via GitHub Releases. Current version: v0.3.0.
 
 ## Stack
@@ -27,7 +27,7 @@ spotify-mod/
 │       │   ├── index.ts                 # mod entry point
 │       │   ├── miniPlayer_config.ts     # selectors and prefix
 │       │   └── paywallRemover.ts        # MutationObserver paywall removal
-│       └── adskipper/                   # IN PROGRESS
+│       └── adskipper/                   # SHIPPED — do not touch
 │           ├── index.ts                 # entry — runs captureAudioElement, wires waitForMusicReady → initAdPlayingListener
 │           ├── waitForMusicReady.ts     # one-shot body observer, fires onReady(nowPlayingWidget)
 │           ├── audioElementCapture.ts   # hooks HTMLMediaElement.prototype.src setter to capture Spotify's media element
@@ -102,41 +102,21 @@ git push origin v0.x.0
 
 ### Done
 - Mini player paywall removal — fully shipped. **Do not touch `src/mods/miniplayer/`.**
+- Audio ad skipper — fully shipped. **Do not touch `src/mods/adskipper/`.**
 
-### In progress — `src/mods/adskipper/`
+**How the ad skipper works:**
+- `audioElementCapture.ts` hooks `HTMLMediaElement.prototype.src` setter to capture Spotify's media element into `window._spotifyAudio` before Spotify initializes
+- `waitForMusicReady.ts` gates everything until `[data-testid="now-playing-widget"]` is in the DOM
+- `adPlayingListener.ts` watches `now-playing-widget` with a MutationObserver — on each mutation checks for `[data-testid="ad-link"]`, and if present waits for a valid `audio.duration` then seeks to `duration - 0.5` to skip
+- Each ad in a multi-ad sequence triggers its own mutation, so multiple ads are handled naturally without any loop
+- `index.ts` exports `initAdSkipper()` — wired into `src/main.ts`
 
-**What is confirmed working (tested in browser with extension loaded):**
-- `[data-testid="ad-link"]` is the primary ad detection signal — only appears in the DOM when an audio ad is playing
-- MutationObserver on `[data-testid="now-playing-widget"]` with `{ childList: true, subtree: true }` correctly fires when an ad starts
-- Each ad in a multi-ad sequence triggers its own mutation — no polling loop needed
-- `waitForMusicReady` correctly gates the ad observer until Spotify has loaded a playback session
-- `audioElementCapture.ts` successfully captures Spotify's media element by hooking `HTMLMediaElement.prototype.src` setter
-- Seeking `audio.currentTime = audio.duration - 0.5` successfully skips ads
-- `waitForValidDuration()` correctly handles the async duration load before attempting the seek
-- Multiple ads in a row are all skipped reliably
-
-**Current state of each file:**
-
-`waitForMusicReady.ts` — **DONE**
-Waits for `[data-testid="now-playing-widget"]` to appear in the DOM before starting ad detection. Short-circuits immediately if the widget is already present (mid-session init). Passes the widget element to the `onReady` callback. One-shot observer on `document.body` — disconnects itself once the widget is found.
-
-`audioElementCapture.ts` — **DONE**
-Hooks `HTMLMediaElement.prototype.src` setter to intercept the moment Spotify assigns a source to its media element. Stores the element in `window._spotifyAudio` (typed in `src/types/spotify.d.ts`). Must run before Spotify initializes — called at the top of `adskipper/index.ts`.
-
-`adPlayingListener.ts` — **DONE, still testing**
-Sets up a MutationObserver on `now-playing-widget`. On every mutation, checks for `[data-testid="ad-link"]`. If present, calls `waitForValidDuration()` then seeks to `audio.duration - 0.5` to skip the ad. `waitForValidDuration()` polls every 100ms until `audio.duration` is a valid non-NaN number. Still missing: `destroy` export.
-
-`index.ts` — **DONE, exports missing**
-Calls `captureAudioElement()` immediately, then `waitForMusicReady` → `initAdPlayingListener`. Still missing: `initAdSkipper` / `destroyAdSkipper` exports, not yet wired into `src/main.ts`.
-
-### NEXT STEP
-- Add `destroy` export to `adPlayingListener.ts`
-- Export `initAdSkipper()` and `destroyAdSkipper()` from `index.ts`
-- Wire adskipper into `src/main.ts`
-- Finish testing, then ship
+### NEXT STEP — v0.3.1
+- Automate version sync in `src/core/config.ts` — currently hardcoded to `0.1.0`, should read from `package.json` at build time
 
 ### Do not touch
 - `src/mods/miniplayer/` — fully shipped
+- `src/mods/adskipper/` — fully shipped
 - `extension/content.js` — static loader, rarely changes
 - `extension/manifest.json` — never changes
 - `extension/logic.js` — compiled output only, edit via `src/`
