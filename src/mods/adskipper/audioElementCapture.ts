@@ -1,8 +1,10 @@
+import { AD_SKIPPER_PREFIX } from './adskipperConfig';
+
 export function captureAudioElement(): void {
   const desc = Object.getOwnPropertyDescriptor(HTMLMediaElement.prototype, 'src');
 
   if (!desc || !desc.set || !desc.get) {
-    console.error('Failed to intercept audio src property');
+    console.error(`${AD_SKIPPER_PREFIX} Failed to intercept audio src property`);
     throw new Error('Cannot hook into HTMLMediaElement.src');
   }
 
@@ -15,4 +17,5 @@ export function captureAudioElement(): void {
       return desc.get!.call(this);
     }
   });
+  console.log(`${AD_SKIPPER_PREFIX} Audio element capture hook installed!`);
 }
