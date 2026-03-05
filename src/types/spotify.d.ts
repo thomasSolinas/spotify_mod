@@ -6,6 +6,8 @@ interface Window {
         requestWindow: (options?: { width?: number; height?: number }) => Promise<Window>;
         addEventListener: (type: 'enter', listener: (event: DocumentPictureInPictureEvent) => void) => void;
     };
+
+    _spotifyAudio?: HTMLMediaElement;
 }
 
 interface DocumentPictureInPictureEvent extends Event {

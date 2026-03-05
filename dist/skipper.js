@@ -38,3 +38,5 @@ function initAdPlayingListener(nowPlayingWidget) {
 waitForMusicReady(() => {
   initAdPlayingListener(document.querySelector('[data-testid="now-playing-widget"]'));
 });
+
+

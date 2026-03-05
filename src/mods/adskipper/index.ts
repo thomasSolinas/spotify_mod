@@ -1,7 +1,10 @@
 // MAYBE DONE
 import { waitForMusicReady } from "./waitForMusicReady";
 import { initAdPlayingListener } from "./adPlayingListener";
+import { captureAudioElement } from './audioElementCapture';
 
-waitForMusicReady(() => {
-    initAdPlayingListener(document.querySelector('[data-testid="now-playing-widget"]') as HTMLElement);
+
+captureAudioElement();
+waitForMusicReady((nowPlayingWidget) => {
+  initAdPlayingListener(nowPlayingWidget);
 });
