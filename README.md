@@ -1,6 +1,6 @@
 # spotify-mod
 
-Removes the mini player (PiP) paywall on Spotify free accounts.
+Removes the mini player (PiP) paywall and skips audio ads on Spotify free accounts.
 Auto-updates on every Spotify load — no reinstall ever needed.
 
 ---
@@ -51,11 +51,18 @@ spotify-mod/
 │   ├── core/
 │   │   ├── inject.ts                    # webpack chunk injector
 │   │   └── config.ts                    # mod name, version, mod IDs
+│   ├── types/
+│   │   └── spotify.d.ts                 # global type declarations
 │   └── mods/
-│       └── miniplayer/
+│       ├── miniplayer/
+│       │   ├── index.ts                 # mod entry point
+│       │   ├── miniPlayer_config.ts     # selectors and prefix
+│       │   └── paywallRemover.ts        # MutationObserver paywall removal
+│       └── adskipper/
 │           ├── index.ts                 # mod entry point
-│           ├── miniPlayer_config.ts     # selectors and prefix
-│           └── paywallRemover.ts        # MutationObserver paywall removal
+│           ├── waitForMusicReady.ts     # gates ad detection until Spotify has loaded
+│           ├── audioElementCapture.ts   # captures Spotify's media element via prototype hook
+│           └── adPlayingListener.ts     # detects ads and skips them
 ├── extension/
 │   ├── manifest.json                    # static, never changes
 │   ├── content.js                       # static loader, rarely changes
@@ -70,7 +77,7 @@ spotify-mod/
 bun install
 
 # build src/
-bun run build
+bun build .\src\main.ts --outfile .\extension\logic.js
 ```
 
 After building, manually copy the bundle output to `extension/logic.js`.
@@ -90,7 +97,7 @@ Users are pinned to the latest release tag, not to `main`. A push to `main` with
 
 ```bash
 # 1. build and copy output to extension/logic.js
-bun run build
+bun build .\src\main.ts --outfile .\extension\logic.js
 
 # 2. commit
 git add .
@@ -126,11 +133,11 @@ Follows [semantic versioning](https://semver.org):
 - `0.x.0` — new feature or structural change
 - `1.0.0` — first fully stable public release
 
-Current version: **v0.2.4**
+Current version: **v0.3.0**
 
 ---
 
 ## Roadmap
 
 - [x] Mini player paywall removal
-- [ ] Ad removal
+- [x] Audio ad skipper
