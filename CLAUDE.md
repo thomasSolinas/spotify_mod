@@ -26,7 +26,9 @@ spotify-mod/
 │       │   ├── miniPlayer_config.ts     # selectors and prefix
 │       │   └── paywallRemover.ts        # MutationObserver paywall removal
 │       └── adskipper/                   # IN PROGRESS
-│           └── index.ts                 # ad detection + mute/skip logic
+│           ├── index.ts                 # entry — wires waitForMusicReady → initAdPlayingListener
+│           ├── waitForMusicReady.ts     # one-shot body observer, fires onReady(nowPlayingWidget)
+│           └── adPlayingListener.ts     # MutationObserver on now-playing-widget, detects ad-link
 ├── extension/
 │   ├── manifest.json                    # static, never changes
 │   ├── content.js                       # thin loader: checks GitHub for updates, injects logic.js
@@ -93,38 +95,26 @@ git push origin v0.x.0
 ### Done
 - Mini player paywall removal — fully shipped. **Do not touch `src/mods/miniplayer/`.**
 
-### In progress — `src/mods/adskipper/index.ts`
+### In progress — `src/mods/adskipper/`
 
 **What is confirmed working (tested in browser console):**
 - `[data-testid="ad-link"]` is the primary ad detection signal — only appears in the DOM when an audio ad is playing
 - MutationObserver on `[data-testid="now-playing-widget"]` with `{ childList: true, subtree: true }` correctly fires when an ad starts/ends
 - Observer fires 3x on normal song changes (multiple DOM updates for title, artist, cover art) and 1x on ad start — expected, the querySelector check handles it correctly
-- `isAdPlaying()` confirmed working in browser console
+- `waitForMusicReady` correctly gates the ad observer until Spotify has loaded a playback session
 
-**Current state of `src/mods/adskipper/index.ts`:**
-```typescript
-const NOW_PLAYING_SELECTOR = '[data-testid="now-playing-widget"]';
-const AD_PLAYING_SELECTOR = '[data-testid="ad-link"]';
+**Current state of each file:**
 
-function isAdPlaying(): boolean {
-    const observer = new MutationObserver((mutations: MutationRecord[]) => {
-        document.querySelector(AD_PLAYING_SELECTOR)
-            ? console.log("Ad is playing")
-            : console.log("No ad playing");
-    });
+`waitForMusicReady.ts` — **DONE**
+Waits for `[data-testid="now-playing-widget"]` to appear in the DOM before starting ad detection. Short-circuits immediately if the widget is already present (mid-session init). Passes the widget element to the `onReady` callback. One-shot observer on `document.body` — disconnects itself once the widget is found.
 
-    observer.observe(document.querySelector(NOW_PLAYING_SELECTOR) as Node, {
-        childList: true,
-        subtree: true
-    });
+`adPlayingListener.ts` — **detection working, skip logic not yet implemented**
+Sets up a MutationObserver on `now-playing-widget`. On every DOM mutation, queries for `[data-testid="ad-link"]` and logs whether an ad is playing. Still missing: actual skip/mute action, and `destroy` export.
 
-    return false;
-}
+`index.ts` — **wiring done, exports missing**
+Calls `waitForMusicReady`, then passes the widget element to `initAdPlayingListener`. Still missing: `initAdSkipper` / `destroyAdSkipper` exports, not yet wired into `src/main.ts`.
 
-isAdPlaying();
-```
-
-### NEXT STEP — actually skip/mute the ad
+### NEXT STEP — act on the ad (in `adPlayingListener.ts`)
 
 Detection is done. The next task is: **when `[data-testid="ad-link"]` appears, act on the ad.**
 
@@ -136,7 +126,7 @@ Three approaches to try in order:
 
 **Do NOT block network requests** — Spotify verifies ad handshake completion and blocking causes "Playback Paused" loops.
 
-Also need to: export `initAdSkipper()` and `destroyAdSkipper()`, then wire into `src/main.ts`.
+Also need to: export `initAdSkipper()` and `destroyAdSkipper()` from `index.ts`, then wire into `src/main.ts`.
 
 ### Do not touch
 - `src/mods/miniplayer/` — fully shipped
