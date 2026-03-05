@@ -3,7 +3,7 @@
 ## Overview
 A Chrome extension (Manifest V3) that modifies Spotify Web Player (`open.spotify.com`).
 Currently ships two mods: mini player paywall removal (done) and audio ad skipper (in progress).
-Auto-updates via GitHub Releases. Current version: v0.2.5.
+Auto-updates via GitHub Releases. Current version: v0.3.0.
 
 ## Stack
 - TypeScript (`src/`) → compiled to `extension/logic.js`
@@ -20,15 +20,18 @@ spotify-mod/
 │   ├── core/
 │   │   ├── inject.ts                    # webpack chunk injector for Spotify internals
 │   │   └── config.ts                    # mod name, version, mod IDs
+│   ├── types/
+│   │   └── spotify.d.ts                 # global type declarations (e.g. window._spotifyAudio)
 │   └── mods/
 │       ├── miniplayer/                  # SHIPPED — do not touch
 │       │   ├── index.ts                 # mod entry point
 │       │   ├── miniPlayer_config.ts     # selectors and prefix
 │       │   └── paywallRemover.ts        # MutationObserver paywall removal
 │       └── adskipper/                   # IN PROGRESS
-│           ├── index.ts                 # entry — wires waitForMusicReady → initAdPlayingListener
+│           ├── index.ts                 # entry — runs captureAudioElement, wires waitForMusicReady → initAdPlayingListener
 │           ├── waitForMusicReady.ts     # one-shot body observer, fires onReady(nowPlayingWidget)
-│           └── adPlayingListener.ts     # MutationObserver on now-playing-widget, detects ad-link
+│           ├── audioElementCapture.ts   # hooks HTMLMediaElement.prototype.src setter to capture Spotify's media element
+│           └── adPlayingListener.ts     # MutationObserver on now-playing-widget, detects ad-link and skips ad
 ├── extension/
 │   ├── manifest.json                    # static, never changes
 │   ├── content.js                       # thin loader: checks GitHub for updates, injects logic.js
@@ -80,6 +83,11 @@ git push origin v0.x.0
 - Spotify is a React SPA — nodes can be fully replaced by the reconciler mid-session
 - Spotify localises UI strings (e.g. "Advertisement" → "Pubblicità" in Italian) — never rely on visible text for detection
 - **Do not block network requests** — Spotify verifies ad handshake completion; blocking causes "Playback Paused" loops
+- Spotify uses a `<video>` element (not `<audio>`) for all playback — `document.querySelector('audio')` always returns null
+- The media element is never appended to the DOM — it must be captured via prototype hook (see `audioElementCapture.ts`)
+- Ad duration (`audio.duration`) loads asynchronously — must wait for a valid value before seeking
+- Ads are played through the same media element as music — only the src blob URL changes
+- Multiple ads in a sequence each trigger a new DOM mutation on `now-playing-widget`, so the observer handles them naturally without any loop
 
 ## Key selectors (verified in browser during live session)
 ```
@@ -97,36 +105,35 @@ git push origin v0.x.0
 
 ### In progress — `src/mods/adskipper/`
 
-**What is confirmed working (tested in browser console):**
+**What is confirmed working (tested in browser with extension loaded):**
 - `[data-testid="ad-link"]` is the primary ad detection signal — only appears in the DOM when an audio ad is playing
-- MutationObserver on `[data-testid="now-playing-widget"]` with `{ childList: true, subtree: true }` correctly fires when an ad starts/ends
-- Observer fires 3x on normal song changes (multiple DOM updates for title, artist, cover art) and 1x on ad start — expected, the querySelector check handles it correctly
+- MutationObserver on `[data-testid="now-playing-widget"]` with `{ childList: true, subtree: true }` correctly fires when an ad starts
+- Each ad in a multi-ad sequence triggers its own mutation — no polling loop needed
 - `waitForMusicReady` correctly gates the ad observer until Spotify has loaded a playback session
+- `audioElementCapture.ts` successfully captures Spotify's media element by hooking `HTMLMediaElement.prototype.src` setter
+- Seeking `audio.currentTime = audio.duration - 0.5` successfully skips ads
+- `waitForValidDuration()` correctly handles the async duration load before attempting the seek
+- Multiple ads in a row are all skipped reliably
 
 **Current state of each file:**
 
 `waitForMusicReady.ts` — **DONE**
 Waits for `[data-testid="now-playing-widget"]` to appear in the DOM before starting ad detection. Short-circuits immediately if the widget is already present (mid-session init). Passes the widget element to the `onReady` callback. One-shot observer on `document.body` — disconnects itself once the widget is found.
 
-`adPlayingListener.ts` — **detection working, skip logic not yet implemented**
-Sets up a MutationObserver on `now-playing-widget`. On every DOM mutation, queries for `[data-testid="ad-link"]` and logs whether an ad is playing. Still missing: actual skip/mute action, and `destroy` export.
+`audioElementCapture.ts` — **DONE**
+Hooks `HTMLMediaElement.prototype.src` setter to intercept the moment Spotify assigns a source to its media element. Stores the element in `window._spotifyAudio` (typed in `src/types/spotify.d.ts`). Must run before Spotify initializes — called at the top of `adskipper/index.ts`.
 
-`index.ts` — **wiring done, exports missing**
-Calls `waitForMusicReady`, then passes the widget element to `initAdPlayingListener`. Still missing: `initAdSkipper` / `destroyAdSkipper` exports, not yet wired into `src/main.ts`.
+`adPlayingListener.ts` — **DONE, still testing**
+Sets up a MutationObserver on `now-playing-widget`. On every mutation, checks for `[data-testid="ad-link"]`. If present, calls `waitForValidDuration()` then seeks to `audio.duration - 0.5` to skip the ad. `waitForValidDuration()` polls every 100ms until `audio.duration` is a valid non-NaN number. Still missing: `destroy` export.
 
-### NEXT STEP — act on the ad (in `adPlayingListener.ts`)
+`index.ts` — **DONE, exports missing**
+Calls `captureAudioElement()` immediately, then `waitForMusicReady` → `initAdPlayingListener`. Still missing: `initAdSkipper` / `destroyAdSkipper` exports, not yet wired into `src/main.ts`.
 
-Detection is done. The next task is: **when `[data-testid="ad-link"]` appears, act on the ad.**
-
-Three approaches to try in order:
-
-1. **Seek to end** — `const audio = document.querySelector("audio"); audio.currentTime = audio.duration - 0.5` — tricks Spotify into advancing to the next track. Try this first.
-2. **Mute** — `audio.muted = true` when ad-link appears, `audio.muted = false` when it disappears. Use as fallback if seeking causes issues.
-3. **Click skip button** — check if Spotify renders a skip button in the DOM during ads and `.click()` it programmatically.
-
-**Do NOT block network requests** — Spotify verifies ad handshake completion and blocking causes "Playback Paused" loops.
-
-Also need to: export `initAdSkipper()` and `destroyAdSkipper()` from `index.ts`, then wire into `src/main.ts`.
+### NEXT STEP
+- Add `destroy` export to `adPlayingListener.ts`
+- Export `initAdSkipper()` and `destroyAdSkipper()` from `index.ts`
+- Wire adskipper into `src/main.ts`
+- Finish testing, then ship
 
 ### Do not touch
 - `src/mods/miniplayer/` — fully shipped
