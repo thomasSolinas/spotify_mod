@@ -55,8 +55,90 @@ function initMiniPlayerMod() {
   });
 }
 
+// src/mods/adskipper/adskipperConfig.ts
+var AD_SKIPPER_PREFIX = `[${MOD_NAME}:${MODS.ADS}]`;
+
+// src/mods/adskipper/waitForMusicReady.ts
+var NOW_PLAYING_SELECTOR = '[data-testid="now-playing-widget"]';
+function waitForMusicReady(onReady) {
+  let nowPlayingWidget = document.querySelector(NOW_PLAYING_SELECTOR);
+  if (nowPlayingWidget !== null) {
+    console.log(`${AD_SKIPPER_PREFIX} Now-playing widget already present, starting ad listener!`, nowPlayingWidget);
+    onReady(nowPlayingWidget);
+    return;
+  }
+  const observer = new MutationObserver(() => {
+    nowPlayingWidget = document.querySelector(NOW_PLAYING_SELECTOR);
+    if (nowPlayingWidget !== null) {
+      observer.disconnect();
+      console.log(`${AD_SKIPPER_PREFIX} Now-playing widget found! Starting ad listener...`, nowPlayingWidget);
+      onReady(nowPlayingWidget);
+    }
+  });
+  observer.observe(document.body, { childList: true, subtree: true });
+}
+
+// src/mods/adskipper/adPlayingListener.ts
+var AD_PLAYING_SELECTOR = '[data-testid="ad-link"]';
+function initAdPlayingListener(nowPlayingWidget) {
+  const observer = new MutationObserver(async () => {
+    console.log(`${AD_SKIPPER_PREFIX} Mutation detected on now-playing widget`);
+    const adPlayer = document.querySelector(AD_PLAYING_SELECTOR);
+    if (adPlayer) {
+      console.log(`${AD_SKIPPER_PREFIX} Ad detected! Waiting for duration to load before skipping...`);
+      await waitForValidDuration();
+      const audio = window._spotifyAudio;
+      audio.currentTime = audio.duration - 0.5;
+      console.log(`${AD_SKIPPER_PREFIX} Ad skipped!`);
+    }
+  });
+  observer.observe(nowPlayingWidget, {
+    childList: true,
+    subtree: true
+  });
+}
+function waitForValidDuration() {
+  return new Promise((resolve) => {
+    const interval = setInterval(() => {
+      const audio = window._spotifyAudio;
+      if (!isNaN(audio.duration) && audio.duration > 0) {
+        clearInterval(interval);
+        resolve();
+        console.log(`${AD_SKIPPER_PREFIX} Ad duration loaded, skipping now`);
+      }
+    }, 100);
+  });
+}
+
+// src/mods/adskipper/audioElementCapture.ts
+function captureAudioElement() {
+  const desc = Object.getOwnPropertyDescriptor(HTMLMediaElement.prototype, "src");
+  if (!desc || !desc.set || !desc.get) {
+    console.error(`${AD_SKIPPER_PREFIX} Failed to intercept audio src property`);
+    throw new Error("Cannot hook into HTMLMediaElement.src");
+  }
+  Object.defineProperty(HTMLMediaElement.prototype, "src", {
+    set(val) {
+      window._spotifyAudio = this;
+      desc.set.call(this, val);
+    },
+    get() {
+      return desc.get.call(this);
+    }
+  });
+  console.log(`${AD_SKIPPER_PREFIX} Audio element capture hook installed!`);
+}
+
+// src/mods/adskipper/index.ts
+function initAdSkipperMod() {
+  console.log(`${AD_SKIPPER_PREFIX} Initializing ad skipper mod...`);
+  captureAudioElement();
+  waitForMusicReady(initAdPlayingListener);
+}
+
 // src/main.ts
 inject(() => {
   console.log(`%c${MOD_NAME} v${MOD_VERSION} loaded!`, "color: green; font-weight: bold;");
   initMiniPlayerMod();
+  initAdSkipperMod();
 });
