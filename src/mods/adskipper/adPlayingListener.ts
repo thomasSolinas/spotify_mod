@@ -1,28 +1,37 @@
-//FIX
 const AD_PLAYING_SELECTOR = '[data-testid="ad-link"]';
 
-
-// document.querySelector(AD_PLAYING_SELECTOR) !== null;
-
 export function initAdPlayingListener(nowPlayingWidget: HTMLElement): void {
-    const observer = new MutationObserver((mutations: MutationRecord[]) => {
-        // Check if the ad-link element is present, indicating an ad is playing
-        const addPlayer = document.querySelector(AD_PLAYING_SELECTOR);
-        if(addPlayer) {
-            console.log("Ad is playing");
-        } else {
-            console.log("No ad playing");
+    console.log('mutation fired');
+
+    const observer = new MutationObserver(() => {
+        const adPlayer = document.querySelector(AD_PLAYING_SELECTOR);
+        if (adPlayer) {
+            console.log('Ad detected, skipping...');
+            const audio = window._spotifyAudio as HTMLMediaElement;
+            audio.currentTime = audio.duration - 0.5;
         }
 
-        console.log("isAdPPlaying() called with mutations:", mutations);
-        
+        // if (adPlayer) {
+        //     let attempts = 0;
+        //     const poll = setInterval(() => {
+        //         const audio = window._spotifyAudio as HTMLMediaElement;
+        //         if (!document.querySelector(AD_PLAYING_SELECTOR) || attempts >= 5) {
+        //             clearInterval(poll);
+        //             return;
+        //         }
+        //         if (!isNaN(audio.duration) && audio.duration > 0) {
+        //             console.log(`Skipping ad, attempt ${attempts + 1}`);
+        //             audio.currentTime = audio.duration - 0.5;
+        //             attempts++;
+        //         }
+        //     }, 1000);
+        // }
+
+
     });
 
-
-    //observe the now-playing widget for changes to detect ad start/stop
     observer.observe(nowPlayingWidget, {
         childList: true,
         subtree: true
     });
-
 }

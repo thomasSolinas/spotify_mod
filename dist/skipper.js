@@ -19,14 +19,14 @@ function waitForMusicReady(onReady) {
 // src/mods/adskipper/adPlayingListener.ts
 var AD_PLAYING_SELECTOR = '[data-testid="ad-link"]';
 function initAdPlayingListener(nowPlayingWidget) {
-  const observer = new MutationObserver((mutations) => {
-    const addPlayer = document.querySelector(AD_PLAYING_SELECTOR);
-    if (addPlayer) {
-      console.log("Ad is playing");
-    } else {
-      console.log("No ad playing");
+  console.log("mutation fired");
+  const observer = new MutationObserver(() => {
+    const adPlayer = document.querySelector(AD_PLAYING_SELECTOR);
+    if (adPlayer) {
+      console.log("Ad detected, skipping...");
+      const audio = window._spotifyAudio;
+      audio.currentTime = audio.duration - 0.5;
     }
-    console.log("isAdPPlaying() called with mutations:", mutations);
   });
   observer.observe(nowPlayingWidget, {
     childList: true,
@@ -34,9 +34,26 @@ function initAdPlayingListener(nowPlayingWidget) {
   });
 }
 
+// src/mods/adskipper/audioElementCapture.ts
+function captureAudioElement() {
+  const desc = Object.getOwnPropertyDescriptor(HTMLMediaElement.prototype, "src");
+  if (!desc || !desc.set || !desc.get) {
+    console.error("Failed to intercept audio src property");
+    throw new Error("Cannot hook into HTMLMediaElement.src");
+  }
+  Object.defineProperty(HTMLMediaElement.prototype, "src", {
+    set(val) {
+      window._spotifyAudio = this;
+      desc.set.call(this, val);
+    },
+    get() {
+      return desc.get.call(this);
+    }
+  });
+}
+
 // src/mods/adskipper/index.ts
-waitForMusicReady(() => {
-  initAdPlayingListener(document.querySelector('[data-testid="now-playing-widget"]'));
+captureAudioElement();
+waitForMusicReady((nowPlayingWidget) => {
+  initAdPlayingListener(nowPlayingWidget);
 });
-
-
