@@ -13,3 +13,12 @@ interface Window {
 interface DocumentPictureInPictureEvent extends Event {
     readonly window: Window;
 }
+
+interface PipPreferencesObject {
+    areSet: boolean; // whether the user has set their preferences or not
+    pipEnabled: boolean;
+    width: number;
+    height: number;
+    backgroundColor: string; //hex color code, e.g. #000000 for black
+    textColor: string; //hex color code, e.g. #FFFFFF for white
+}

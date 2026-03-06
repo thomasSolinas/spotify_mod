@@ -6,3 +6,16 @@ export function setCustomMiniPlayerSize(pipWindow: Window, width = 1, height = 1
 
 // make exported function that accepts an object (i'll define what it contains in src/typc/spotify.d.ts) 
 // object is used to set custom preferences for the mini player, such as size, position, etc. (for now just size)
+function setCustomMiniPlayerPreferences(pipWindow: Window, preferences: PipPreferencesObject): void {
+    if(!preferences.areSet) return;
+
+    if(!preferences.pipEnabled) {
+        pipWindow.close();
+        return;
+    }
+
+    pipWindow.resizeTo(preferences.width, preferences.height);
+    //
+
+    return; 
+}
