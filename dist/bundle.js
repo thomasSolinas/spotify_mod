@@ -16,7 +16,7 @@ function inject(initFunction) {
 
 // src/core/config.ts
 var MOD_NAME = "spotify-mod";
-var MOD_VERSION = "0.1.0";
+var MOD_VERSION = "0.4.0";
 var MODS = {
   MINI_PLAYER: "miniplayer",
   ADS: "ads"
@@ -142,6 +142,7 @@ function initAdSkipperMod() {
 inject(() => {
   console.log(`%c${MOD_NAME} v${MOD_VERSION} loaded!`, "color: green; font-weight: bold;");
   const bannerContainer = createModInitBannersContainer();
+  bannerContainer.appendChild(createModInitBanner("Spotify Mod", MOD_VERSION));
   if (initMiniPlayerMod()) {
     setTimeout(() => {
       bannerContainer.appendChild(createModInitBanner("Mini Player"));
@@ -153,9 +154,10 @@ inject(() => {
     }, 200);
   }
 });
-function createModInitBanner(modName, modVersion = MOD_VERSION) {
+function createModInitBanner(modName, modVersion = null) {
   const banner = document.createElement("div");
-  banner.textContent = `✅ ${modName} initialized!`;
+  const verString = modVersion ? `v${modVersion} ` : "";
+  banner.textContent = `✅ ${modName} ${verString}initialized!`;
   Object.assign(banner.style, {
     background: "#1db954",
     color: "#fff",
@@ -174,7 +176,7 @@ function createModInitBanner(modName, modVersion = MOD_VERSION) {
     banner.style.opacity = "0";
     banner.style.transition = "opacity 0.5s ease-in-out";
     banner.addEventListener("transitionend", () => banner.remove());
-  }, 5000);
+  }, 3000);
   return banner;
 }
 function createModInitBannersContainer() {
@@ -186,6 +188,7 @@ function createModInitBannersContainer() {
         transform: translateX(-50%);
         z-index: 99999;
         display: flex;
+        gap: 10px;
         flex-direction: column;
         align-items: center;`;
   document.body.appendChild(bannerContainer);

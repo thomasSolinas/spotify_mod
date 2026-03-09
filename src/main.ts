@@ -6,6 +6,9 @@ import { initAdSkipperMod } from './mods/adskipper';
 inject(() => {
     console.log(`%c${MOD_NAME} v${MOD_VERSION} loaded!`, 'color: green; font-weight: bold;');
     const bannerContainer = createModInitBannersContainer();
+
+    bannerContainer.appendChild(createModInitBanner('Spotify Mod', MOD_VERSION));
+
     if (initMiniPlayerMod()) {
         setTimeout(() => {
             bannerContainer.appendChild(createModInitBanner('Mini Player'));
@@ -19,10 +22,12 @@ inject(() => {
 });
 
 //  ── Mods load completion banners ────────────────────────────────────────────────────────────────
-function createModInitBanner(modName: string, modVersion: string = MOD_VERSION) {
+function createModInitBanner(modName: string, modVersion: string | null = null): HTMLDivElement {
     const banner = document.createElement("div");
 
-    banner.textContent = `✅ ${modName} initialized!`;
+    const verString = modVersion ? `v${modVersion} ` : '';
+
+    banner.textContent = `✅ ${modName} ${verString}initialized!`;
     Object.assign(banner.style, {
         // position: "fixed",
         // bottom: "80px",
@@ -47,7 +52,7 @@ function createModInitBanner(modName: string, modVersion: string = MOD_VERSION) 
         banner.style.opacity = "0";
         banner.style.transition = "opacity 0.5s ease-in-out";
         banner.addEventListener("transitionend", () => banner.remove());
-    }, 5000);
+    }, 3000);
 
 return banner;
 }
@@ -61,6 +66,7 @@ function createModInitBannersContainer(): HTMLDivElement {
         transform: translateX(-50%);
         z-index: 99999;
         display: flex;
+        gap: 10px;
         flex-direction: column;
         align-items: center;`;
     document.body.appendChild(bannerContainer);
