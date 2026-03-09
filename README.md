@@ -133,11 +133,14 @@ Follows [semantic versioning](https://semver.org):
 - `0.x.0` — new feature or structural change
 - `1.0.0` — first fully stable public release
 
-Current version: **v0.3.0**
+Current version: **v0.4.2**
 
 ---
 
 ## Roadmap
 
 - [x] Mini player paywall removal
+
 - [x] Audio ad skipper
+  
+- [x] Loaded Banners 
