@@ -56,6 +56,9 @@ function showUpdateBanner(latestTag) {
   };
 }
 
+
+
+
 // ── Main ─────────────────────────────────────────────────────────────────────
 (async () => {
   // Always inject first so the mod runs regardless of network
