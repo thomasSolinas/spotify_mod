@@ -161,6 +161,12 @@ inject(() => {
       bannerContainer.appendChild(createModInitBanner("Mini Player"));
       const disableItem = document.createElement("button");
       disableItem.innerText = "Disable";
+      disableItem.style.cssText = `
+             background: #1db954;
+             color: #fff;
+             border: 1px solid #fff;
+             border-radius: 2px;
+            `;
       disableItem.addEventListener("click", (e) => {
         e.preventDefault();
         disable();
