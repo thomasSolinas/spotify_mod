@@ -24,9 +24,9 @@ var MODS = {
 
 // src/mods/miniplayer/miniPlayer_config.ts
 var MINI_PLAYER_PREFIX = `[${MOD_NAME}:${MODS.MINI_PLAYER}]`;
+var PLAYER_SELECTOR = '[data-testid="pip-hover-element"]';
 
 // src/mods/miniplayer/paywallRemover.ts
-var PLAYER_SELECTOR = '[data-testid="pip-hover-element"]';
 function removePaywall(pipWindow) {
   const observer = new MutationObserver((mutations) => {
     const player = pipWindow.document.querySelector(PLAYER_SELECTOR);
@@ -46,12 +46,18 @@ function removePaywall(pipWindow) {
   });
 }
 
+// src/mods/miniplayer/miniPlayerRemover.ts
+function initMiniPlayerRemover(pipWindow) {
+  pipWindow.close();
+}
+
 // src/mods/miniplayer/index.ts
 function initMiniPlayerMod() {
   window.documentPictureInPicture.addEventListener("enter", (event) => {
     const pipWindow = event.window;
     console.log(`${MINI_PLAYER_PREFIX} PiP opened!`, pipWindow);
     removePaywall(pipWindow);
+    initMiniPlayerRemover(pipWindow);
   });
   return true;
 }
