@@ -1,6 +1,5 @@
 import { MINI_PLAYER_PREFIX } from "./miniPlayer_config";
-
-const PLAYER_SELECTOR = '[data-testid="pip-hover-element"]'; // Paywall is immediate sibling before this element
+import { PLAYER_SELECTOR } from "./miniPlayer_config"; // Paywall is immediate sibling before this element
 
 export function removePaywall(pipWindow: Window) {
     const observer = new MutationObserver((mutations: MutationRecord[]) => { // Check for mutations in the PiP window
