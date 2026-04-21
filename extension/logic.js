@@ -16,7 +16,7 @@ function inject(initFunction) {
 
 // src/core/config.ts
 var MOD_NAME = "spotify-mod";
-var MOD_VERSION = "0.4.0";
+var MOD_VERSION = "0.5.0";
 var MODS = {
   MINI_PLAYER: "miniplayer",
   ADS: "ads"
@@ -47,8 +47,15 @@ function removePaywall(pipWindow) {
 }
 
 // src/mods/miniplayer/miniPlayerRemover.ts
+var disabled = false;
 function initMiniPlayerRemover(pipWindow) {
+  if (disabled)
+    return;
   pipWindow.close();
+}
+function disable() {
+  disabled = true;
+  console.log("miniplayer Remover disabled");
 }
 
 // src/mods/miniplayer/index.ts
@@ -152,6 +159,13 @@ inject(() => {
   if (initMiniPlayerMod()) {
     setTimeout(() => {
       bannerContainer.appendChild(createModInitBanner("Mini Player"));
+      const disableItem = document.createElement("span");
+      disableItem.innerText = "Disable";
+      disableItem.addEventListener("click", (e) => {
+        e.preventDefault();
+        disable();
+      });
+      bannerContainer.appendChild(createModInitBanner("Mini Player remover", null, disableItem));
     }, 200);
   }
   if (initAdSkipperMod()) {
@@ -160,10 +174,12 @@ inject(() => {
     }, 200);
   }
 });
-function createModInitBanner(modName, modVersion = null) {
+function createModInitBanner(modName, modVersion = null, additions = null) {
   const banner = document.createElement("div");
   const verString = modVersion ? `v${modVersion} ` : "";
   banner.textContent = `✅ ${modName} ${verString}initialized!`;
+  if (additions)
+    banner.appendChild(additions);
   Object.assign(banner.style, {
     background: "#1db954",
     color: "#fff",

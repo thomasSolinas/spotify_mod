@@ -3,6 +3,9 @@ import { MOD_NAME, MODS, MOD_VERSION } from './core/config';
 import { initMiniPlayerMod } from './mods/miniplayer';
 import { initAdSkipperMod } from './mods/adskipper';
 
+//disabling
+import { disable as disableRemoverMod } from './mods/miniplayer/miniPlayerRemover';
+
 inject(() => {
     console.log(`%c${MOD_NAME} v${MOD_VERSION} loaded!`, 'color: green; font-weight: bold;');
     const bannerContainer = createModInitBannersContainer();
@@ -12,6 +15,15 @@ inject(() => {
     if (initMiniPlayerMod()) {
         setTimeout(() => {
             bannerContainer.appendChild(createModInitBanner('Mini Player'));
+
+            const disableItem = document.createElement('span');
+            disableItem.innerText = 'Disable';
+            disableItem.addEventListener('click', e => {
+                e.preventDefault();
+                disableRemoverMod();
+            });
+
+            bannerContainer.appendChild(createModInitBanner('Mini Player remover', null, disableItem));
         }, 200);
     }
     if (initAdSkipperMod()) {
@@ -22,12 +34,15 @@ inject(() => {
 });
 
 //  ── Mods load completion banners ────────────────────────────────────────────────────────────────
-function createModInitBanner(modName: string, modVersion: string | null = null): HTMLDivElement {
+function createModInitBanner(modName: string, modVersion: string | null = null, additions: HTMLElement | null = null): HTMLDivElement {
     const banner = document.createElement("div");
 
     const verString = modVersion ? `v${modVersion} ` : '';
 
     banner.textContent = `✅ ${modName} ${verString}initialized!`;
+    if(additions)
+        banner.appendChild(additions);
+
     Object.assign(banner.style, {
         // position: "fixed",
         // bottom: "80px",
