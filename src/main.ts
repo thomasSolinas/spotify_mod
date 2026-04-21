@@ -16,7 +16,7 @@ inject(() => {
         setTimeout(() => {
             bannerContainer.appendChild(createModInitBanner('Mini Player'));
 
-            const disableItem = document.createElement('span');
+            const disableItem = document.createElement('button');
             disableItem.innerText = 'Disable';
             disableItem.addEventListener('click', e => {
                 e.preventDefault();
